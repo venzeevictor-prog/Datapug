@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#7C4DFF">
+<title>Admin — DataPlug</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" class="nav-toggle-checkbox">
+<div class="app-shell">
+  <label for="nav-toggle" class="topbar-toggle">
+    <span class="burger"><span></span></span>
+    <span class="dot">●</span> Admin
+  </label>
+  <label for="nav-toggle" class="nav-backdrop"></label>
+  <aside class="sidebar">
+    <div class="brand"><span class="dot">●</span> Admin</div>
+    <button class="nav-item active" data-view="users">Users</button>
+    <button class="nav-item" data-view="orders">Orders</button>
+    <button class="nav-item" data-view="plans" id="nav-plans">Data Plans</button>
+    <button class="nav-item" data-view="providers" id="nav-providers">Providers</button>
+    <button class="nav-item" data-view="referrals" id="nav-referrals">Referrals</button>
+    <button class="nav-item" data-view="analytics" id="nav-analytics">Stats</button>
+    <button class="nav-item" data-view="webstats" id="nav-webstats">Website traffic</button>
+    <button class="nav-item" data-view="support">Support inbox</button>
+    <button class="nav-item" data-view="audit" id="nav-audit">Audit log</button>
+    <div class="sidebar-footer">
+      <div class="username" id="sidebar-username"></div>
+      <a href="/dashboard.html" style="font-size:13px;color:var(--ink-soft);display:block;margin-top:6px;">← Customer view</a>
+      <button class="logout" id="logout-btn">Log out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- Users -->
+    <section class="view active" id="view-users">
+      <h1 class="page-title">Users</h1>
+      <p class="page-sub">All registered accounts.</p>
+      <div class="field" style="max-width:320px;margin-bottom:16px;">
+        <input id="users-search" type="text" placeholder="Search by username or email...">
+      </div>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>User</th><th>Role</th><th>Balance</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- User detail (shown over the users list) -->
+    <section class="view" id="view-user-detail">
+      <button class="action-link" id="back-to-users" style="margin-bottom:12px;">← Back to users</button>
+      <h1 class="page-title" id="detail-username"></h1>
+      <p class="page-sub" id="detail-email"></p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Wallet balance</div>
+          <div class="stat-value num" id="detail-balance">₦0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Role</div>
+          <div class="stat-value" id="detail-role" style="font-size:16px;"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Status</div>
+          <div class="stat-value" id="detail-status" style="font-size:16px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;max-width:480px;">
+        <h3 style="margin-top:0;font-size:15px;">Wallet adjustment</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label>Amount (₦) — negative to debit</label>
+            <input id="adjust-amount" type="number" step="0.01" placeholder="500 or -500">
+          </div>
+          <div class="field">
+            <label>Reason (required, logged)</label>
+            <input id="adjust-reason" type="text" placeholder="Goodwill credit for delayed order">
+          </div>
+          <button class="btn-primary" id="adjust-submit">Apply adjustment</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;max-width:480px;" id="role-change-card">
+        <h3 style="margin-top:0;font-size:15px;">Change role</h3>
+        <div class="form-grid">
+          <div class="field">
+            <select id="role-select">
+              <option value="customer">Customer</option>
+              <option value="support">Support</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super admin</option>
+            </select>
+          </div>
+          <button class="btn-primary" id="role-submit">Update role</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;max-width:480px;">
+        <h3 style="margin-top:0;font-size:15px;">Account status</h3>
+        <button class="btn-primary" id="toggle-status-btn">Suspend account</button>
+      </div>
+
+      <h3 style="font-size:16px;">Recent orders</h3>
+      <div class="card table-scroll" style="margin-bottom:20px;">
+        <table>
+          <thead><tr><th>Plan</th><th>Phone</th><th>Charge</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="detail-orders-body"></tbody>
+        </table>
+      </div>
+
+      <h3 style="font-size:16px;">Recent transactions</h3>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Type</th><th>Amount</th><th>Balance after</th><th>Date</th></tr></thead>
+          <tbody id="detail-transactions-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Orders (all customers) -->
+    <section class="view" id="view-orders">
+      <h1 class="page-title">Orders</h1>
+      <p class="page-sub">Every data order across all customers.</p>
+      <div class="field" style="max-width:220px;margin-bottom:16px;">
+        <select id="orders-status-filter">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Customer</th><th>Network</th><th>Plan</th><th>Phone</th><th>Charge</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody id="admin-orders-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section class="view" id="view-services">
+      <h1 class="page-title">Services</h1>
+      <p class="page-sub">Catalog synced from your upstream providers. Edit rates or toggle visibility.</p>
+      <div class="toolbar">
+        <select id="sync-provider-select"></select>
+        <button class="btn-primary btn-auto" id="sync-services-btn">Sync from provider</button>
+        <button class="btn-ghost btn-auto" id="recalculate-services-btn">Recalculate prices</button>
+        <input id="services-category-filter" type="text" placeholder="Filter by category (e.g. TikTok)" class="filter-input">
+      </div>
+      <p class="rate-note" id="services-summary"></p>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Service</th><th>Provider</th><th>Category</th><th>Our rate</th><th id="services-cost-header">Cost (₦)</th><th>Margin</th><th>Active</th><th>Actions</th></tr></thead>
+          <tbody id="services-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Providers — add other product APIs here -->
+    <section class="view" id="view-providers">
+      <h1 class="page-title">Providers</h1>
+      <p class="page-sub">Every upstream API you resell through. Add a new one to bring in another product's catalog.</p>
+
+      <div class="card" style="max-width:520px;margin-bottom:24px;">
+        <h3 style="margin-top:0;font-size:15px;">Add a provider</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label>Display name</label>
+            <input id="new-provider-name" type="text" placeholder="e.g. VTPass">
+          </div>
+          <div class="field">
+            <label>Slug (unique, lowercase, no spaces)</label>
+            <input id="new-provider-slug" type="text" placeholder="e.g. vtpass">
+          </div>
+          <div class="field">
+            <label>API URL</label>
+            <input id="new-provider-url" type="url" value="https://vtpass.com/api" placeholder="https://vtpass.com/api">
+            <p class="rate-note" style="margin-top:4px;">Use https://sandbox.vtpass.com/api to test with fake money first.</p>
+          </div>
+          <div class="field">
+            <label>API key</label>
+            <input id="new-provider-key" type="text" placeholder="Your VTPass api-key">
+          </div>
+          <div class="field">
+            <label>Secret key</label>
+            <input id="new-provider-secret-key" type="text" placeholder="Your VTPass secret-key (used for purchases)">
+          </div>
+          <div class="field">
+            <label>Public key</label>
+            <input id="new-provider-public-key" type="text" placeholder="Your VTPass public-key (used for reading plans/balance)">
+            <p class="rate-note" style="margin-top:4px;">VTPass needs all three keys — get them from your VTPass dashboard.</p>
+          </div>
+          <div class="field">
+            <label>Markup multiplier</label>
+            <input id="new-provider-markup" type="number" step="0.01" value="1.15">
+            <p class="rate-note" style="margin-top:4px;">1.15 = 15% on top of VTPass's price.</p>
+          </div>
+          <button class="btn-primary" id="add-provider-btn">Add provider</button>
+        </div>
+      </div>
+
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Name</th><th>Plans synced</th><th>Markup</th><th>Status</th><th>Balance</th><th>Actions</th></tr></thead>
+          <tbody id="providers-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Data Plans -->
+    <section class="view" id="view-plans">
+      <h1 class="page-title">Data Plans</h1>
+      <p class="page-sub">Synced from VTPass across all four networks. New plans start hidden UNLESS they're weekly — flip on monthly/2-3 month plans here whenever you're ready to expand past weekly.</p>
+      <div class="toolbar">
+        <select id="sync-plans-provider-select"></select>
+        <button class="btn-primary btn-auto" id="sync-plans-btn">Sync from VTPass</button>
+        <select id="plans-network-filter">
+          <option value="">All networks</option>
+          <option value="MTN">MTN</option>
+          <option value="Glo">Glo</option>
+          <option value="Airtel">Airtel</option>
+          <option value="9mobile">9mobile</option>
+        </select>
+        <select id="plans-duration-filter">
+          <option value="">All durations</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="2-3months">2-3 months</option>
+          <option value="other">Other (daily/yearly — hidden by default)</option>
+        </select>
+      </div>
+      <p class="rate-note" id="plans-summary"></p>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Plan</th><th>Network</th><th>Duration</th><th>Data</th><th>Our price</th><th id="plans-cost-header">Cost (₦)</th><th>Margin</th><th>Active</th><th>Actions</th></tr></thead>
+          <tbody id="plans-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Referrals -->
+    <section class="view" id="view-referrals">
+      <h1 class="page-title">Referrals</h1>
+      <p class="page-sub">₦3,500 per referral, paid once the referred user deposits at least ₦1,000.</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Rewarded</div>
+          <div class="stat-value num" id="referrals-rewarded-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending (not yet funded ₦1,000+)</div>
+          <div class="stat-value num" id="referrals-pending-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total paid out</div>
+          <div class="stat-value num" id="referrals-total-paid">₦0.00</div>
+        </div>
+      </div>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Referrer</th><th>Referred</th><th>Reward</th><th>Status</th><th>Signed up</th><th>Rewarded</th></tr></thead>
+          <tbody id="referrals-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Analytics / profit -->
+    <section class="view" id="view-analytics">
+      <h1 class="page-title">Revenue &amp; profit</h1>
+      <p class="page-sub">What you're actually earning after provider costs.</p>
+
+      <h3 style="font-size:14px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">All time</h3>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Revenue</div>
+          <div class="stat-value num" id="analytics-alltime-revenue">₦0.00</div>
+        </div>
+        <div class="stat-card" id="analytics-alltime-cost-card">
+          <div class="stat-label">Provider cost</div>
+          <div class="stat-value num" id="analytics-alltime-cost">₦0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Profit</div>
+          <div class="stat-value num" id="analytics-alltime-profit">₦0.00</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:14px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Last 30 days</h3>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Revenue</div>
+          <div class="stat-value num" id="analytics-30d-revenue">₦0.00</div>
+        </div>
+        <div class="stat-card" id="analytics-30d-cost-card">
+          <div class="stat-label">Provider cost</div>
+          <div class="stat-value num" id="analytics-30d-cost">₦0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Profit</div>
+          <div class="stat-value num" id="analytics-30d-profit">₦0.00</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:16px;">Profit by network</h3>
+      <div class="card table-scroll" style="margin-bottom:28px;">
+        <table>
+          <thead><tr><th>Network</th><th>Orders</th><th>Revenue</th><th id="analytics-cost-header">Cost</th><th>Profit</th></tr></thead>
+          <tbody id="analytics-by-network-body"></tbody>
+        </table>
+      </div>
+
+      <h3 style="font-size:16px;">Orders &amp; revenue over time</h3>
+      <div class="toolbar">
+        <select id="stats-period-select">
+          <option value="daily">Daily (last 30 days)</option>
+          <option value="monthly">Monthly (last 12 months)</option>
+          <option value="range">Custom date range</option>
+        </select>
+        <input type="date" id="stats-range-from" style="display:none;">
+        <input type="date" id="stats-range-to" style="display:none;">
+        <button class="btn-primary btn-auto" id="stats-range-apply" style="display:none;">Apply</button>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <canvas id="stats-chart" height="90"></canvas>
+      </div>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Date</th><th>Orders</th><th>Revenue</th><th id="stats-table-cost-header">Profit</th></tr></thead>
+          <tbody id="stats-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Website stats -->
+    <section class="view" id="view-webstats">
+      <h1 class="page-title">Website traffic</h1>
+      <p class="page-sub">Page views, visitors, their devices, and where they're coming from.</p>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Total page views</div>
+          <div class="stat-value num" id="webstats-total-views">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Unique visitors</div>
+          <div class="stat-value num" id="webstats-total-visitors">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Views — last 24h</div>
+          <div class="stat-value num" id="webstats-24h-views">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Visitors — last 24h</div>
+          <div class="stat-value num" id="webstats-24h-visitors">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Views — last 30 days</div>
+          <div class="stat-value num" id="webstats-30d-views">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Visitors — last 30 days</div>
+          <div class="stat-value num" id="webstats-30d-visitors">0</div>
+        </div>
+      </div>
+
+      <div class="webstats-grid">
+        <div class="card webstats-panel">
+          <h3>Top pages</h3>
+          <div id="webstats-pages"></div>
+        </div>
+        <div class="card webstats-panel">
+          <h3>Devices</h3>
+          <div id="webstats-devices"></div>
+        </div>
+        <div class="card webstats-panel">
+          <h3>Browsers</h3>
+          <div id="webstats-browsers"></div>
+        </div>
+        <div class="card webstats-panel">
+          <h3>Operating systems</h3>
+          <div id="webstats-os"></div>
+        </div>
+        <div class="card webstats-panel" style="grid-column: 1 / -1;">
+          <h3>Top locations</h3>
+          <div id="webstats-locations"></div>
+        </div>
+      </div>
+
+      <h3 style="font-size:16px;">Recent visits</h3>
+      <p class="page-sub" style="margin-top:-8px;">IP addresses are shown with the last octet masked.</p>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Time</th><th>Page</th><th>Visitor</th><th>Device</th><th>Browser</th><th>OS</th><th>Location</th><th>Referrer</th><th>IP</th></tr></thead>
+          <tbody id="webstats-recent-body"></tbody>
+        </table>
+        <div class="empty-state" id="webstats-recent-empty" style="display:none;">
+          <div class="icon">○</div>
+          No visits recorded yet.
+        </div>
+      </div>
+    </section>
+
+    <!-- Support inbox -->
+    <section class="view" id="view-support">
+      <h1 class="page-title">Support inbox</h1>
+      <p class="page-sub">Conversations from customers.</p>
+      <div class="chat-layout">
+        <div class="chat-list" id="admin-chat-list"></div>
+        <div class="chat-window">
+          <div class="chat-header">
+            <span class="title" id="admin-chat-title">Select a conversation</span>
+            <button class="action-link danger" id="admin-close-convo-btn" style="display:none;">Close chat</button>
+          </div>
+          <div class="chat-messages" id="admin-chat-messages"></div>
+          <div class="chat-input-row">
+            <input id="admin-chat-input" type="text" placeholder="Type a reply..." disabled>
+            <button id="admin-chat-send-btn" disabled>Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Audit log -->
+    <section class="view" id="view-audit">
+      <h1 class="page-title">Audit log</h1>
+      <p class="page-sub">Every sensitive action taken by staff.</p>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Actor</th><th>Action</th><th>Target</th><th>Details</th><th>Date</th></tr></thead>
+          <tbody id="audit-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/admin.js"></script>
+<script src="/js/track.js"></script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#7C4DFF">
+<title>Dashboard — DataPlug</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" class="nav-toggle-checkbox">
+<div class="app-shell">
+  <label for="nav-toggle" class="topbar-toggle">
+    <span class="burger"><span></span></span>
+    <span class="dot">●</span> DataPlug
+  </label>
+  <label for="nav-toggle" class="nav-backdrop"></label>
+  <aside class="sidebar">
+    <div class="brand"><span class="dot">●</span> DataPlug</div>
+    <button class="nav-item active" data-view="overview">Overview</button>
+    <button class="nav-item" data-view="fund">Fund wallet</button>
+    <button class="nav-item" data-view="order">Buy data</button>
+    <button class="nav-item" data-view="orders">Order history</button>
+    <button class="nav-item" data-view="referrals">Referrals</button>
+    <button class="nav-item" data-view="transactions">Transactions</button>
+    <a class="nav-item" href="/settings.html" style="text-decoration:none;">Security settings</a>
+    <a class="nav-item" href="/admin.html" id="admin-portal-link" style="display:none; text-decoration:none;">Admin portal →</a>
+    <div class="sidebar-footer">
+      <div class="username" id="sidebar-username"></div>
+      <button class="logout" id="logout-btn">Log out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- Overview -->
+    <section class="view active" id="view-overview">
+      <h1 class="page-title">Overview</h1>
+      <p class="page-sub">Your wallet balance and recent activity.</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Wallet balance</div>
+          <div class="stat-value num" id="stat-balance">₦0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending orders</div>
+          <div class="stat-value num" id="stat-active-orders">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total orders</div>
+          <div class="stat-value num" id="stat-total-orders">0</div>
+        </div>
+      </div>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Network</th><th>Plan</th><th>Phone</th><th>Status</th><th>Placed</th></tr></thead>
+          <tbody id="overview-orders-body"></tbody>
+        </table>
+        <div class="empty-state" id="overview-empty" style="display:none;">
+          <div class="icon">○</div>
+          No orders yet. Buy your first data plan to see it here.
+        </div>
+      </div>
+    </section>
+
+    <!-- Fund wallet -->
+    <section class="view" id="view-fund">
+      <h1 class="page-title">Fund wallet</h1>
+      <p class="page-sub" id="fund-min-note">Add money to your wallet with Paystack. Minimum ₦1,000.</p>
+      <div class="card" style="max-width:420px;">
+        <div class="form-grid">
+          <div class="field">
+            <label for="fund-amount">Amount (₦)</label>
+            <input id="fund-amount" type="number" min="1000" step="1" placeholder="1000">
+          </div>
+          <button class="btn-primary" id="fund-submit">Continue to Paystack</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Buy data -->
+    <section class="view" id="view-order">
+      <h1 class="page-title">Buy data</h1>
+      <p class="page-sub">Pick a network, then a plan.</p>
+
+      <div class="market-breadcrumb" id="plans-breadcrumb" style="display:none;">
+        <button type="button" class="market-back-btn" id="plans-back-btn">← Back</button>
+        <span class="market-breadcrumb-title" id="plans-breadcrumb-title"></span>
+      </div>
+
+      <!-- Screen 1: networks -->
+      <div class="market-screen" id="plans-screen-networks">
+        <div class="market-category-grid" id="plans-network-grid"></div>
+      </div>
+
+      <!-- Screen 2: duration tabs + plans within the chosen network -->
+      <div class="market-screen" id="plans-screen-plans" style="display:none;">
+        <div class="order-type-tabs" id="plans-duration-tabs">
+          <button class="order-type-tab active" data-duration="weekly">Weekly</button>
+          <button class="order-type-tab" data-duration="monthly">Monthly</button>
+          <button class="order-type-tab" data-duration="2-3months">2-3 Months</button>
+        </div>
+        <div class="market-product-cards" id="plans-cards"></div>
+        <div class="empty-state" id="plans-empty" style="display:none;">
+          <div class="icon">○</div>
+          No plans available in this duration yet — check back soon.
+        </div>
+      </div>
+
+      <!-- Screen 3: phone number + confirm / receipt -->
+      <div class="market-screen" id="plans-screen-purchase" style="display:none;">
+        <div id="plans-purchase-content"></div>
+      </div>
+    </section>
+
+    <!-- Order history -->
+    <section class="view" id="view-orders">
+      <h1 class="page-title">Order history</h1>
+      <p class="page-sub">Every data plan you've bought.</p>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Network</th><th>Plan</th><th>Phone</th><th>Charge</th><th>Status</th><th>Placed</th></tr></thead>
+          <tbody id="orders-body"></tbody>
+        </table>
+        <div class="empty-state" id="orders-empty" style="display:none;">
+          <div class="icon">○</div>
+          No orders yet.
+        </div>
+      </div>
+    </section>
+
+    <!-- Referrals -->
+    <section class="view" id="view-referrals">
+      <h1 class="page-title">Referrals</h1>
+      <p class="page-sub">Earn ₦3,500 for every friend you refer — paid once they fund their wallet with at least ₦1,000.</p>
+
+      <div class="card" style="max-width:520px;margin-bottom:20px;">
+        <h3 style="margin-top:0;font-size:15px;">Your referral link</h3>
+        <div class="form-grid">
+          <div class="field">
+            <input id="referral-link" type="text" readonly style="font-family:var(--font-mono);font-size:13px;">
+          </div>
+          <button class="btn-primary" id="copy-referral-link">Copy link</button>
+        </div>
+        <p class="rate-note" style="margin-top:10px;">Share this link. When someone signs up through it and funds their wallet with ₦1,000 or more, you get ₦3,500 — automatically, no need to ask.</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Total referred</div>
+          <div class="stat-value num" id="referral-total-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Rewarded</div>
+          <div class="stat-value num" id="referral-rewarded-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total earned</div>
+          <div class="stat-value num" id="referral-total-earned">₦0.00</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:16px;">Your referrals</h3>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>User</th><th>Status</th><th>Signed up</th></tr></thead>
+          <tbody id="referrals-list-body"></tbody>
+        </table>
+        <div class="empty-state" id="referrals-empty" style="display:none;">
+          <div class="icon">○</div>
+          No referrals yet — share your link above to start earning.
+        </div>
+      </div>
+    </section>
+
+    <!-- Transactions -->
+    <section class="view" id="view-transactions">
+      <h1 class="page-title">Transactions</h1>
+      <p class="page-sub">Every wallet movement, in order.</p>
+      <div class="card table-scroll">
+        <table>
+          <thead><tr><th>Type</th><th>Amount</th><th>Balance after</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="transactions-body"></tbody>
+        </table>
+        <div class="empty-state" id="transactions-empty" style="display:none;">
+          <div class="icon">○</div>
+          No transactions yet.
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/support-widget.js"></script>
+<script src="/js/track.js"></script>
+</body>
+</html>

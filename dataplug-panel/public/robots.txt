@@ -1,0 +1,25 @@
+# Flutter Social Services (FSS)
+# https://www.robotstxt.org/robotstxt.html
+#
+# The domain below is filled in automatically from the APP_URL environment
+# variable at request time (see server.js) — set APP_URL to your real
+# production domain before deploying, nothing else needs to change here.
+
+User-agent: *
+Allow: /
+Allow: /index.html
+
+# Logged-in app screens and account flows — nothing here is useful to index,
+# and most of it requires a session anyway.
+Disallow: /login.html
+Disallow: /dashboard.html
+Disallow: /admin.html
+Disallow: /settings.html
+Disallow: /reset-password.html
+Disallow: /forgot-password.html
+Disallow: /payment-callback.html
+
+# Never let crawlers hit the API.
+Disallow: /api/
+
+Sitemap: https://SITE_URL/sitemap.xml

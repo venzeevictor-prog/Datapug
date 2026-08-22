@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#7C4DFF">
+<title>Confirming payment — DataPlug</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="auth-shell">
+  <div class="auth-card" style="text-align:center;">
+    <div class="auth-brand" style="justify-content:center;"><span class="dot">●</span> DataPlug</div>
+    <p class="auth-sub" id="status-text">Confirming your payment...</p>
+    <a href="/dashboard.html" class="btn-primary" style="display:inline-block;text-decoration:none;" id="continue-link">Go to dashboard</a>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+(async () => {
+  const statusText = document.getElementById('status-text');
+  const params = new URLSearchParams(location.search);
+  // Paystack appends ?reference=... on redirect back; fall back to what we stored before leaving.
+  const reference = params.get('reference') || params.get('trxref') || sessionStorage.getItem('dataplug_pending_reference');
+
+  if (!API.token()) {
+    statusText.textContent = 'Please log in to confirm your payment.';
+    return;
+  }
+  if (!reference) {
+    statusText.textContent = 'No payment reference found.';
+    return;
+  }
+
+  try {
+    const result = await API.get(`/wallet/verify/${reference}`);
+    statusText.textContent = result.status === 'success'
+      ? 'Payment confirmed — your wallet has been credited.'
+      : `Payment status: ${result.status}. If you completed the payment, this may take a moment to confirm.`;
+    sessionStorage.removeItem('dataplug_pending_reference');
+  } catch (err) {
+    statusText.textContent = err.message || 'Could not confirm payment. Check your transactions tab shortly.';
+  }
+})();
+</script>
+<script src="/js/track.js"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#7C4DFF">
+<title>Settings — DataPlug</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" class="nav-toggle-checkbox">
+<div class="app-shell">
+  <label for="nav-toggle" class="topbar-toggle">
+    <span class="burger"><span></span></span>
+    <span class="dot">●</span> DataPlug
+  </label>
+  <label for="nav-toggle" class="nav-backdrop"></label>
+  <aside class="sidebar">
+    <div class="brand"><span class="dot">●</span> DataPlug</div>
+    <a class="nav-item" href="/dashboard.html" style="text-decoration:none;">← Dashboard</a>
+    <div class="sidebar-footer">
+      <div class="username" id="sidebar-username"></div>
+      <button class="logout" id="logout-btn">Log out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <h1 class="page-title">Security settings</h1>
+    <p class="page-sub">Manage two-factor authentication for your account.</p>
+
+    <div class="card" style="max-width:480px;">
+      <div id="status-view">
+        <p id="twofa-status-text">Checking status...</p>
+        <button class="btn-primary" id="enable-btn" style="display:none;">Enable 2FA</button>
+        <button class="btn-primary" id="show-disable-btn" style="display:none;background:var(--red);">Disable 2FA</button>
+      </div>
+
+      <div id="setup-view" style="display:none;">
+        <p style="font-size:14px;color:var(--ink-soft);">Scan this QR code with an authenticator app (Google Authenticator, Authy, 1Password, etc.):</p>
+        <div style="text-align:center;margin:16px 0;">
+          <img id="qr-image" style="max-width:200px;border:1px solid var(--line);border-radius:8px;">
+        </div>
+        <p style="font-size:12px;color:var(--ink-soft);text-align:center;">Or enter this key manually: <span class="num" id="secret-text"></span></p>
+        <div class="form-grid" style="margin-top:16px;">
+          <div class="field">
+            <label for="verify-code">Enter the 6-digit code to confirm</label>
+            <input id="verify-code" type="text" inputmode="numeric" placeholder="123456">
+          </div>
+          <button class="btn-primary" id="verify-btn">Confirm and enable</button>
+        </div>
+      </div>
+
+      <div id="backup-codes-view" style="display:none;">
+        <p style="color:var(--signal);font-weight:600;">2FA is now enabled.</p>
+        <p style="font-size:13px;color:var(--ink-soft);">Save these backup codes somewhere safe — each can be used once if you lose access to your authenticator app. They won't be shown again.</p>
+        <div class="card" style="background:var(--paper);margin:12px 0;">
+          <div class="num" id="backup-codes-list" style="line-height:1.8;"></div>
+        </div>
+        <button class="btn-primary" id="backup-done-btn">Done</button>
+      </div>
+
+      <div id="disable-view" style="display:none;">
+        <p style="font-size:14px;color:var(--ink-soft);">Confirm your password and a current 2FA code to disable.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="disable-password">Password</label>
+            <input id="disable-password" type="password">
+          </div>
+          <div class="field">
+            <label for="disable-code">2FA code</label>
+            <input id="disable-code" type="text" inputmode="numeric" placeholder="123456">
+          </div>
+          <button class="btn-primary" id="disable-submit-btn" style="background:var(--red);">Disable 2FA</button>
+          <button class="action-link" id="disable-cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/js/api.js"></script>
+<script>
+if (!API.token()) location.href = '/login.html';
+const user = API.currentUser();
+document.getElementById('sidebar-username').textContent = user ? `@${user.username}` : '';
+document.getElementById('logout-btn').addEventListener('click', () => {
+  API.clearToken();
+  location.href = '/login.html';
+});
+
+function toast(message, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.className = `toast show ${isError ? 'error' : ''}`;
+  setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+const statusView = document.getElementById('status-view');
+const setupView = document.getElementById('setup-view');
+const backupView = document.getElementById('backup-codes-view');
+const disableView = document.getElementById('disable-view');
+
+function showOnly(view) {
+  [statusView, setupView, backupView, disableView].forEach((v) => v.style.display = 'none');
+  view.style.display = 'block';
+}
+
+async function loadStatus() {
+  try {
+    const me = await API.get('/auth/me');
+    document.getElementById('twofa-status-text').textContent = me.totp_enabled
+      ? 'Two-factor authentication is currently ON.'
+      : 'Two-factor authentication is currently OFF. Enable it for extra account security.';
+    document.getElementById('enable-btn').style.display = me.totp_enabled ? 'none' : 'inline-block';
+    document.getElementById('show-disable-btn').style.display = me.totp_enabled ? 'inline-block' : 'none';
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+document.getElementById('enable-btn').addEventListener('click', async () => {
+  try {
+    const data = await API.post('/auth/2fa/setup');
+    document.getElementById('qr-image').src = data.qrDataUrl;
+    document.getElementById('secret-text').textContent = data.secret;
+    showOnly(setupView);
+  } catch (err) {
+    toast(err.message, true);
+  }
+});
+
+document.getElementById('verify-btn').addEventListener('click', async () => {
+  const code = document.getElementById('verify-code').value.trim();
+  if (!code) { toast('Enter the 6-digit code.', true); return; }
+  try {
+    const data = await API.post('/auth/2fa/verify', { code });
+    document.getElementById('backup-codes-list').innerHTML = data.backupCodes.map((c) => `<div>${c}</div>`).join('');
+    showOnly(backupView);
+  } catch (err) {
+    toast(err.message, true);
+  }
+});
+
+document.getElementById('backup-done-btn').addEventListener('click', () => {
+  showOnly(statusView);
+  loadStatus();
+});
+
+document.getElementById('show-disable-btn').addEventListener('click', () => showOnly(disableView));
+document.getElementById('disable-cancel-btn').addEventListener('click', () => showOnly(statusView));
+
+document.getElementById('disable-submit-btn').addEventListener('click', async () => {
+  const password = document.getElementById('disable-password').value;
+  const code = document.getElementById('disable-code').value.trim();
+  if (!password || !code) { toast('Both fields are required.', true); return; }
+  try {
+    await API.post('/auth/2fa/disable', { password, code });
+    toast('2FA disabled.');
+    showOnly(statusView);
+    loadStatus();
+  } catch (err) {
+    toast(err.message, true);
+  }
+});
+
+loadStatus();
+</script>
+<script src="/js/track.js"></script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ===== Primary SEO ===== -->
+<title>Log in or Sign up — DataPlug</title>
+<meta name="description" content="Log in to your DataPlug account or create a new one to fund your wallet and buy cheap MTN, Glo, Airtel, and 9mobile data plans.">
+<meta name="keywords" content="DataPlug login, DataPlug sign up, buy data plan login, data marketplace account">
+<meta name="author" content="DataPlug">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://SITE_URL/login.html">
+
+<!-- ===== Open Graph / Facebook ===== -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DataPlug">
+<meta property="og:title" content="Log in or Sign up — DataPlug">
+<meta property="og:description" content="Access your DataPlug wallet and buy data plans, or create a free account in under a minute.">
+<meta property="og:url" content="https://SITE_URL/login.html">
+<meta property="og:image" content="https://SITE_URL/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- ===== Twitter / X card ===== -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Log in or Sign up — DataPlug">
+<meta name="twitter:description" content="Access your DataPlug wallet and buy data plans, or create a free account in under a minute.">
+<meta name="twitter:image" content="https://SITE_URL/og-image.jpg">
+
+<!-- ===== Favicons ===== -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#7C4DFF">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="auth-shell">
+  <div class="auth-card">
+    <a href="/index.html" class="auth-brand" style="text-decoration:none;"><span class="dot">●</span> DataPlug</a>
+    <p class="auth-sub" id="auth-sub">Log in to your account</p>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <form id="login-form">
+      <div class="field">
+        <label for="login-username">Username or email</label>
+        <input id="login-username" type="text" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn-primary" type="submit" id="login-submit">Log in</button>
+      <div style="text-align:center;margin-top:14px;">
+        <a href="/forgot-password.html" style="font-size:13px;color:var(--ink-soft);">Forgot password?</a>
+      </div>
+    </form>
+
+    <form id="twofa-form" style="display:none;">
+      <div class="field">
+        <label for="twofa-code">6-digit code (or backup code)</label>
+        <input id="twofa-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" required>
+      </div>
+      <button class="btn-primary" type="submit" id="twofa-submit">Verify</button>
+      <div style="text-align:center;margin-top:14px;">
+        <button type="button" class="action-link" id="twofa-back-btn">← Back to login</button>
+      </div>
+    </form>
+
+    <form id="signup-form" style="display:none;">
+      <div class="field">
+        <label for="signup-username">Username</label>
+        <input id="signup-username" type="text" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="signup-email">Email</label>
+        <input id="signup-email" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="signup-password">Password</label>
+        <input id="signup-password" type="password" autocomplete="new-password" required minlength="8">
+      </div>
+      <button class="btn-primary" type="submit" id="signup-submit">Create account</button>
+    </form>
+
+    <div class="auth-switch">
+      <span id="switch-text">Don't have an account?</span>
+      <button type="button" id="switch-btn">Sign up</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div class="auth-brand" style="margin-bottom:0;"><span class="dot">●</span> DataPlug</div>
+    <div class="site-footer-links">
+      <a href="/index.html">Home</a>
+      <a href="/about.html">About</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <div class="site-footer-copy">© <span id="footer-year"></span> DataPlug. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="/js/api.js"></script>
+<script>
+const loginForm = document.getElementById('login-form');
+const twofaForm = document.getElementById('twofa-form');
+const signupForm = document.getElementById('signup-form');
+const switchBtn = document.getElementById('switch-btn');
+const switchText = document.getElementById('switch-text');
+const authSub = document.getElementById('auth-sub');
+const errorBanner = document.getElementById('error-banner');
+
+let mode = 'login';
+let pendingTempToken = null;
+
+// If already logged in, skip straight to the dashboard.
+if (API.token()) location.href = '/dashboard.html';
+
+// A referral link lands here as /login.html?ref=CODE — jump straight to the signup form
+// pre-loaded with it, rather than making someone find the "Sign up" toggle themselves.
+const referralCode = new URLSearchParams(location.search).get('ref');
+if (referralCode) {
+  mode = 'signup';
+  loginForm.style.display = 'none';
+  signupForm.style.display = 'block';
+  authSub.textContent = 'Create your account';
+  switchText.textContent = 'Already have an account?';
+  switchBtn.textContent = 'Log in';
+}
+
+switchBtn.addEventListener('click', () => {
+  mode = mode === 'login' ? 'signup' : 'login';
+  const isLogin = mode === 'login';
+  loginForm.style.display = isLogin ? 'block' : 'none';
+  signupForm.style.display = isLogin ? 'none' : 'block';
+  twofaForm.style.display = 'none';
+  authSub.textContent = isLogin ? 'Log in to your account' : 'Create your account';
+  switchText.textContent = isLogin ? "Don't have an account?" : 'Already have an account?';
+  switchBtn.textContent = isLogin ? 'Sign up' : 'Log in';
+  errorBanner.classList.remove('show');
+});
+
+function showError(message) {
+  errorBanner.textContent = message;
+  errorBanner.classList.add('show');
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorBanner.classList.remove('show');
+  const submitBtn = document.getElementById('login-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Logging in...';
+  try {
+    const data = await API.post('/auth/login', {
+      username: document.getElementById('login-username').value.trim(),
+      password: document.getElementById('login-password').value,
+    });
+
+    if (data.requires2fa) {
+      pendingTempToken = data.tempToken;
+      loginForm.style.display = 'none';
+      twofaForm.style.display = 'block';
+      authSub.textContent = 'Enter the code from your authenticator app';
+      document.querySelector('.auth-switch').style.display = 'none';
+      document.getElementById('twofa-code').focus();
+      return;
+    }
+
+    API.setToken(data.token);
+    API.setUser(data.user);
+    location.href = '/dashboard.html';
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Log in';
+  }
+});
+
+twofaForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorBanner.classList.remove('show');
+  const submitBtn = document.getElementById('twofa-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Verifying...';
+  try {
+    const data = await API.post('/auth/2fa/login-verify', {
+      tempToken: pendingTempToken,
+      code: document.getElementById('twofa-code').value.trim(),
+    });
+    API.setToken(data.token);
+    API.setUser(data.user);
+    location.href = '/dashboard.html';
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Verify';
+  }
+});
+
+document.getElementById('twofa-back-btn').addEventListener('click', () => {
+  pendingTempToken = null;
+  twofaForm.style.display = 'none';
+  loginForm.style.display = 'block';
+  document.querySelector('.auth-switch').style.display = 'block';
+  authSub.textContent = 'Log in to your account';
+  errorBanner.classList.remove('show');
+});
+
+document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+signupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorBanner.classList.remove('show');
+  const submitBtn = document.getElementById('signup-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating account...';
+  try {
+    const data = await API.post('/auth/signup', {
+      username: document.getElementById('signup-username').value.trim(),
+      email: document.getElementById('signup-email').value.trim(),
+      password: document.getElementById('signup-password').value,
+      referralCode,
+    });
+    API.setToken(data.token);
+    API.setUser(data.user);
+    location.href = '/dashboard.html';
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Create account';
+  }
+});
+</script>
+<script src="/js/track.js"></script>
+</body>
+</html>

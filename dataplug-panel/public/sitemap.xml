@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Flutter Social Services (FSS) sitemap.
+  The domain below is filled in automatically from the APP_URL environment
+  variable at request time (see server.js) — set APP_URL to your real
+  production domain before deploying, nothing else needs to change here.
+  Only public, indexable pages belong here — the dashboard, admin portal, and
+  account/auth screens are excluded on purpose (see robots.txt).
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://SITE_URL/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://SITE_URL/about.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://SITE_URL/contact.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>
