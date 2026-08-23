@@ -54,13 +54,17 @@ function timeAgo(dateStr) {
     ' · ' + d.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
 }
 
-// VTPass's own plan names carry THEIR price embedded as text, e.g. "N1500 6GB - 7 days" or
-// "MTN N50,000 165GB SME Mobile Data (2-Months)" — shown as-is, that reads as a second price
-// sitting next to ours. This strips any "N<digits>" segment (not just a leading one) so only
-// OUR price is ever visible.
+// VTPass's own plan names carry THEIR price embedded as text — and different networks
+// phrase it differently: MTN uses "N1500 6GB - 7 days", 9mobile uses "...- 1000 Naira"
+// (spelled out, no N prefix). Both patterns get stripped, then leftover " - -" / stray
+// dashes from the removal are cleaned up so only OUR price is ever visible.
 function cleanPlanName(name) {
   if (!name) return name;
-  return name.replace(/\bN[\d,]+(\.\d+)?\b/gi, '').replace(/\s{2,}/g, ' ').trim();
+  let cleaned = name
+    .replace(/\bN[\d,]+(\.\d+)?\b/gi, '')
+    .replace(/\b[\d,]+(\.\d+)?\s*Naira\b/gi, '');
+  cleaned = cleaned.replace(/-\s*-/g, '-').replace(/\s{2,}/g, ' ').replace(/^[\s-]+|[\s-]+$/g, '').trim();
+  return cleaned;
 }
 
 // ---------- Overview ----------

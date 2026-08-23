@@ -265,7 +265,7 @@ function renderPlansAdmin() {
     (!networkFilter || p.network_name === networkFilter) && (!durationFilter || p.duration === durationFilter)
   );
 
-  const durationLabel = { weekly: 'Weekly', monthly: 'Monthly', '2-3months': '2-3 months', other: 'Other' };
+  const durationLabel = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', '2-3months': '2-3 months', other: 'Other' };
   const networksCount = new Set(plansAdminCache.map((p) => p.network_name)).size;
   document.getElementById('plans-summary').textContent =
     `${plansAdminCache.length} plans across ${networksCount} networks` +
