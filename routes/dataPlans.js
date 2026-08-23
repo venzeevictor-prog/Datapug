@@ -78,7 +78,8 @@ router.post('/sync/:providerId', requireAuth, requirePermission('services.manage
   // what you meant, either raise markup_multiplier on the provider (Providers tab) well
   // above 1.67 before this discount would even break even, or tell me to change this rule.
   const DISCOUNT_MULTIPLIER = 0.6; // "minus 40%"
-  const MIN_PRICE_NAIRA = 500; // plans priced below this after discount are synced but hidden, not skipped
+  const MIN_PRICE_NAIRA = 500; // general floor — plans priced below this after discount are synced but hidden, not skipped
+  const MIN_PRICE_DAILY_NAIRA = 600; // daily plans specifically use a higher floor
 
   let totalUpserted = 0;
   let totalSkipped = 0;
@@ -113,7 +114,7 @@ router.post('/sync/:providerId', requireAuth, requirePermission('services.manage
       const dataSize = extractDataSize(v.name);
       const markedUpPrice = providerPrice * markup;
       const price = Math.round(markedUpPrice * DISCOUNT_MULTIPLIER * 100) / 100;
-      const meetsFloor = price >= MIN_PRICE_NAIRA;
+      const meetsFloor = price >= (duration === 'daily' ? MIN_PRICE_DAILY_NAIRA : MIN_PRICE_NAIRA);
       if (!meetsFloor) totalHiddenLowPrice++;
 
       // Full catalog now — every duration syncs active, not just weekly. A plan below the
@@ -142,7 +143,7 @@ router.post('/sync/:providerId', requireAuth, requirePermission('services.manage
   await logAction(req.user.id, 'plans.sync', 'provider', providerRow.id, { totalUpserted, totalSkipped, perNetworkSummary });
   res.json({
     message: `Synced ${totalUpserted} plans across ${networks.length} networks (${perNetworkSummary.join(', ')}). ` +
-      `${totalHiddenLowPrice} plan(s) priced below ₦${MIN_PRICE_NAIRA} were synced but left hidden.`,
+      `${totalHiddenLowPrice} plan(s) below the price floor (₦${MIN_PRICE_NAIRA} general, ₦${MIN_PRICE_DAILY_NAIRA} daily) were synced but left hidden.`,
   });
 });
 
@@ -343,12 +344,12 @@ async function refundDataOrder(orderId, userId, chargeKobo) {
 router.get('/orders', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT do.id, do.phone_number, do.charge, do.status, do.created_at,
+      `SELECT ord.id, ord.phone_number, ord.charge, ord.status, ord.created_at,
               dp.raw_name, dp.data_size, dp.duration, n.name AS network_name
-       FROM data_orders do
-       JOIN data_plans dp ON dp.id = do.plan_id
+       FROM data_orders ord
+       JOIN data_plans dp ON dp.id = ord.plan_id
        JOIN networks n ON n.id = dp.network_id
-       WHERE do.user_id = $1 ORDER BY do.created_at DESC LIMIT 100`,
+       WHERE ord.user_id = $1 ORDER BY ord.created_at DESC LIMIT 100`,
       [req.user.id]
     );
     res.json(result.rows);

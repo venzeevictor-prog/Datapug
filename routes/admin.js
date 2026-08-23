@@ -45,9 +45,9 @@ router.get('/users/:id', requireAuth, requirePermission('users.view_all'), async
     if (!user) return res.status(404).json({ error: 'User not found.' });
 
     const orders = await pool.query(
-      `SELECT do.id, do.phone_number, do.charge, do.status, do.created_at, dp.raw_name AS plan_name, n.name AS network_name
-       FROM data_orders do JOIN data_plans dp ON dp.id = do.plan_id JOIN networks n ON n.id = dp.network_id
-       WHERE do.user_id = $1 ORDER BY do.created_at DESC LIMIT 50`,
+      `SELECT ord.id, ord.phone_number, ord.charge, ord.status, ord.created_at, dp.raw_name AS plan_name, n.name AS network_name
+       FROM data_orders ord JOIN data_plans dp ON dp.id = ord.plan_id JOIN networks n ON n.id = dp.network_id
+       WHERE ord.user_id = $1 ORDER BY ord.created_at DESC LIMIT 50`,
       [req.params.id]
     );
     const transactions = await pool.query(
@@ -194,19 +194,19 @@ router.get('/orders', requireAuth, requirePermission('orders.view_all'), async (
   try {
     const result = status
       ? await pool.query(
-          `SELECT do.*, dp.raw_name AS plan_name, n.name AS network_name, u.username
-           FROM data_orders do
-           JOIN data_plans dp ON dp.id = do.plan_id JOIN networks n ON n.id = dp.network_id
-           JOIN users u ON u.id = do.user_id
-           WHERE do.status = $1 ORDER BY do.created_at DESC LIMIT $2`,
+          `SELECT ord.*, dp.raw_name AS plan_name, n.name AS network_name, u.username
+           FROM data_orders ord
+           JOIN data_plans dp ON dp.id = ord.plan_id JOIN networks n ON n.id = dp.network_id
+           JOIN users u ON u.id = ord.user_id
+           WHERE ord.status = $1 ORDER BY ord.created_at DESC LIMIT $2`,
           [status, limit]
         )
       : await pool.query(
-          `SELECT do.*, dp.raw_name AS plan_name, n.name AS network_name, u.username
-           FROM data_orders do
-           JOIN data_plans dp ON dp.id = do.plan_id JOIN networks n ON n.id = dp.network_id
-           JOIN users u ON u.id = do.user_id
-           ORDER BY do.created_at DESC LIMIT $1`,
+          `SELECT ord.*, dp.raw_name AS plan_name, n.name AS network_name, u.username
+           FROM data_orders ord
+           JOIN data_plans dp ON dp.id = ord.plan_id JOIN networks n ON n.id = dp.network_id
+           JOIN users u ON u.id = ord.user_id
+           ORDER BY ord.created_at DESC LIMIT $1`,
           [limit]
         );
     res.json(result.rows);
@@ -293,12 +293,12 @@ router.get('/analytics', requireAuth, requirePermission('analytics.view'), async
 
     const byNetwork = await pool.query(
       `SELECT n.name AS network_name,
-              SUM(do.charge) AS revenue, SUM(do.provider_cost) AS cost, SUM(do.profit) AS profit,
+              SUM(ord.charge) AS revenue, SUM(ord.provider_cost) AS cost, SUM(ord.profit) AS profit,
               COUNT(*) AS order_count
-       FROM data_orders do
-       JOIN data_plans dp ON dp.id = do.plan_id
+       FROM data_orders ord
+       JOIN data_plans dp ON dp.id = ord.plan_id
        JOIN networks n ON n.id = dp.network_id
-       WHERE do.status = 'completed'
+       WHERE ord.status = 'completed'
        GROUP BY n.id, n.name
        ORDER BY profit DESC`
     );
