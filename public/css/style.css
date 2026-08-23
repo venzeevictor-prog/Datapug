@@ -132,6 +132,27 @@ img { max-width: 100%; }
   -webkit-text-fill-color: transparent;
 }
 
+/* Two-tone wordmark: "flutter" soft/light, "DataPlug" bold + gradient — used everywhere
+   the old bullet-dot brand mark used to sit, now paired with the actual logo icon. */
+.brand-icon {
+  height: 1.2em;
+  width: auto;
+  display: inline-block;
+  vertical-align: middle;
+}
+.brand-flutter {
+  font-weight: 500;
+  color: var(--ink-soft);
+  font-size: 0.7em;
+  margin-right: 1px;
+}
+.brand-name {
+  background: var(--grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .auth-sub {
   color: var(--ink-soft);
   font-size: 14px;
