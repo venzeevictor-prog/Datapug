@@ -11,10 +11,12 @@ async function processPendingOrders() {
   let orders;
   try {
     const result = await pool.query(
-      `SELECT do.id, do.provider_request_id, do.user_id, do.charge, do.created_at, dp.provider_id
-       FROM data_orders do JOIN data_plans dp ON dp.id = do.plan_id
-       WHERE do.status = 'pending'
-       ORDER BY do.created_at ASC LIMIT 100`
+      // Alias is `ord`, deliberately NOT `do` — DO is a reserved PostgreSQL keyword
+      // (anonymous code blocks) and breaks as a bare table alias with a syntax error.
+      `SELECT ord.id, ord.provider_request_id, ord.user_id, ord.charge, ord.created_at, dp.provider_id
+       FROM data_orders ord JOIN data_plans dp ON dp.id = ord.plan_id
+       WHERE ord.status = 'pending'
+       ORDER BY ord.created_at ASC LIMIT 100`
     );
     orders = result.rows;
   } catch (err) {

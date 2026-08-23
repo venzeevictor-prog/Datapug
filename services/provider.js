@@ -74,7 +74,8 @@ function classifyDuration(name) {
   if (/\b(2|3)[\s-]?month/.test(n) || /2-3\s?month/.test(n)) return '2-3months';
   if (/\bweekly\b|\b7\s?days?\b/.test(n)) return 'weekly';
   if (/\bmonthly\b|\b1\s?month\b|\b30\s?days?\b/.test(n)) return 'monthly';
-  return 'other'; // daily plans, 1-year plans, anything that didn't match — hidden by default, see routes/dataPlans.js sync
+  if (/\bdaily\b|\b24\s?h(ou)?rs?\b|\b1\s?day\b/.test(n)) return 'daily';
+  return 'other'; // 1-year plans, anything that didn't match a known pattern — hidden by default, see routes/dataPlans.js sync
 }
 
 // Pulls a human-readable data size out of the name for display, e.g. "6GB" from
