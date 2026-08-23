@@ -1,7 +1,7 @@
 {
-  "name": "Flutter Social Services",
-  "short_name": "FSS",
-  "description": "Flutter Social Services (FSS) — social marketplace and services for growing your social presence.",
+  "name": "FlutterDataPlug",
+  "short_name": "FlutterDataPlug",
+  "description": "FlutterDataPlug — cheap MTN, Glo, Airtel, and 9mobile data plans, one wallet.",
   "icons": [
     { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
