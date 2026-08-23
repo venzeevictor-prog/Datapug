@@ -54,6 +54,15 @@ function timeAgo(dateStr) {
     ' · ' + d.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
 }
 
+// VTPass's own plan names carry THEIR price embedded as text, e.g. "N1500 6GB - 7 days" or
+// "MTN N50,000 165GB SME Mobile Data (2-Months)" — shown as-is, that reads as a second price
+// sitting next to ours. This strips any "N<digits>" segment (not just a leading one) so only
+// OUR price is ever visible.
+function cleanPlanName(name) {
+  if (!name) return name;
+  return name.replace(/\bN[\d,]+(\.\d+)?\b/gi, '').replace(/\s{2,}/g, ' ').trim();
+}
+
 // ---------- Overview ----------
 async function loadOverview() {
   try {
@@ -75,7 +84,7 @@ async function loadOverview() {
       body.innerHTML = orders.slice(0, 5).map((o) => `
         <tr>
           <td>${o.network_name}</td>
-          <td>${o.data_size || o.raw_name}</td>
+          <td>${o.data_size || cleanPlanName(o.raw_name)}</td>
           <td>${o.phone_number}</td>
           <td>${statusBadge(o.status)}</td>
           <td>${timeAgo(o.created_at)}</td>
@@ -217,8 +226,8 @@ function renderPlanCards() {
   grid.innerHTML = filtered.map((p) => `
     <div class="market-product-card" data-id="${p.id}">
       <div class="market-product-body">
-        <h3 class="market-product-name">${p.data_size || p.raw_name}</h3>
-        <p class="market-product-desc">${p.raw_name}</p>
+        <h3 class="market-product-name">${p.data_size || cleanPlanName(p.raw_name)}</h3>
+        <p class="market-product-desc">${cleanPlanName(p.raw_name)}</p>
         <div class="market-product-footer">
           <span class="market-product-price">₦${Number(p.price).toFixed(2)}</span>
         </div>
@@ -239,8 +248,8 @@ function openPurchaseScreen(planId) {
   document.getElementById('plans-purchase-content').innerHTML = `
     <div class="market-purchase-card">
       <div class="market-purchase-body">
-        <h2 class="market-purchase-name">${plan.data_size || plan.raw_name} — ${plan.network_name}</h2>
-        <p class="market-purchase-meta">${plan.raw_name}</p>
+        <h2 class="market-purchase-name">${plan.data_size || cleanPlanName(plan.raw_name)} — ${plan.network_name}</h2>
+        <p class="market-purchase-meta">${cleanPlanName(plan.raw_name)}</p>
         <div class="form-grid">
           <p class="rate-note">Price: <span class="num">₦${Number(plan.price).toFixed(2)}</span></p>
           <div class="field">
@@ -285,7 +294,7 @@ function renderPurchaseReceipt(plan, order, phoneNumber) {
       <div class="market-purchase-body">
         <h2 class="market-purchase-name">${isComplete ? 'Data delivered' : 'Order received'}</h2>
         <div class="modal-status ${isComplete ? 'success' : ''}" style="margin-top:10px;">
-          ${isComplete ? '✓' : '⏳'} ${plan.data_size || plan.raw_name} to ${phoneNumber} — ₦${Number(plan.price).toFixed(2)}
+          ${isComplete ? '✓' : '⏳'} ${plan.data_size || cleanPlanName(plan.raw_name)} to ${phoneNumber} — ₦${Number(plan.price).toFixed(2)}
         </div>
         ${!isComplete ? '<p class="rate-note" style="margin-top:8px;">Confirming with the network — this updates automatically within a few minutes. Check Order history for the final status.</p>' : ''}
         <button class="btn-primary" id="purchase-done" style="margin-top:16px;">Done</button>
@@ -330,7 +339,7 @@ async function loadOrders() {
     body.innerHTML = orders.map((o) => `
       <tr>
         <td>${o.network_name}</td>
-        <td>${o.data_size || o.raw_name}</td>
+        <td>${o.data_size || cleanPlanName(o.raw_name)}</td>
         <td>${o.phone_number}</td>
         <td class="num">₦${formatNaira(o.charge)}</td>
         <td>${statusBadge(o.status)}</td>
