@@ -52,11 +52,12 @@ router.get('/all', requireAuth, requirePermission('services.manage'), async (req
 });
 
 // POST /api/plans/sync/:providerId — pull the latest variation codes for ALL FOUR networks
-// from VTPass and upsert. New plans are activated ONLY if they classify as 'weekly' — the
-// launch scope is weekly-first; monthly/2-3-month plans still get synced and priced (so
-// they're one click away), just hidden from the public catalog until you flip them on via
-// PATCH. An existing plan's is_active is never touched by a re-sync, only new rows default
-// this way — so once you've turned a plan on/off it stays that way across syncs.
+// from VTPass and upsert. Full catalog, all durations active by default. Pricing = (provider
+// cost x markup) with a further 40% cut applied — see DISCOUNT_MULTIPLIER below for the
+// margin-safety flag on that math. Plans priced below ₦500 after the cut are synced but
+// left hidden rather than skipped, so they're recoverable later without a re-sync.
+// Manual price overrides (custom_price) make a row immune to future auto-adjustment of
+// both price and visibility — treated as "an admin already reviewed this one."
 router.post('/sync/:providerId', requireAuth, requirePermission('services.manage'), async (req, res) => {
   const { client: providerClient, providerRow } = await getProviderClient(req.params.providerId).catch((err) => {
     throw Object.assign(new Error(err.message), { lookupFailed: true });
@@ -69,8 +70,19 @@ router.post('/sync/:providerId', requireAuth, requirePermission('services.manage
   const networks = networksResult.rows;
   const markup = Number(providerRow.markup_multiplier);
 
+  // Pricing rule, as instructed: take the normal marked-up price (provider cost x markup)
+  // and cut it by 40% — displayed as a flat price, no "40% off" badge anywhere.
+  // FLAG: with the default 15% markup (markup_multiplier=1.15), this computes to
+  // provider_price * 1.15 * 0.6 = provider_price * 0.69 — i.e. ~69% of what VTPass
+  // actually charges. That's below cost, not a discount off your margin. If that's not
+  // what you meant, either raise markup_multiplier on the provider (Providers tab) well
+  // above 1.67 before this discount would even break even, or tell me to change this rule.
+  const DISCOUNT_MULTIPLIER = 0.6; // "minus 40%"
+  const MIN_PRICE_NAIRA = 500; // plans priced below this after discount are synced but hidden, not skipped
+
   let totalUpserted = 0;
   let totalSkipped = 0;
+  let totalHiddenLowPrice = 0;
   const perNetworkSummary = [];
 
   for (const network of networks) {
@@ -99,11 +111,16 @@ router.post('/sync/:providerId', requireAuth, requirePermission('services.manage
 
       const duration = classifyDuration(v.name);
       const dataSize = extractDataSize(v.name);
-      const price = Math.round(providerPrice * markup * 100) / 100; // round to kobo-equivalent precision
+      const markedUpPrice = providerPrice * markup;
+      const price = Math.round(markedUpPrice * DISCOUNT_MULTIPLIER * 100) / 100;
+      const meetsFloor = price >= MIN_PRICE_NAIRA;
+      if (!meetsFloor) totalHiddenLowPrice++;
 
-      // Existing row: only touch pricing (respecting custom_price), never is_active or
-      // duration classification — an admin's manual toggle/override should survive a re-sync.
-      // New row: is_active defaults true ONLY for 'weekly' — see function comment above.
+      // Full catalog now — every duration syncs active, not just weekly. A plan below the
+      // ₦500 floor still gets stored (so it's there if you ever want to enable it) but
+      // starts hidden. Existing rows: is_active is only touched if you haven't manually
+      // customized this plan's price — a manual price edit is treated as "admin has
+      // reviewed this row," so a re-sync won't silently flip its visibility back.
       const result = await pool.query(
         `INSERT INTO data_plans (network_id, provider_id, provider_variation_code, raw_name, data_size, duration, provider_price, price, is_active)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -112,8 +129,9 @@ router.post('/sync/:providerId', requireAuth, requirePermission('services.manage
            data_size = EXCLUDED.data_size,
            provider_price = EXCLUDED.provider_price,
            price = CASE WHEN data_plans.custom_price THEN data_plans.price ELSE EXCLUDED.price END,
+           is_active = CASE WHEN data_plans.custom_price THEN data_plans.is_active ELSE EXCLUDED.is_active END,
            updated_at = now()`,
-        [network.id, providerRow.id, v.variation_code, v.name, dataSize, duration, providerPrice, price, duration === 'weekly']
+        [network.id, providerRow.id, v.variation_code, v.name, dataSize, duration, providerPrice, price, meetsFloor]
       );
       networkUpserted += result.rowCount;
     }
@@ -122,7 +140,10 @@ router.post('/sync/:providerId', requireAuth, requirePermission('services.manage
   }
 
   await logAction(req.user.id, 'plans.sync', 'provider', providerRow.id, { totalUpserted, totalSkipped, perNetworkSummary });
-  res.json({ message: `Synced ${totalUpserted} plans across ${networks.length} networks (${perNetworkSummary.join(', ')}).` });
+  res.json({
+    message: `Synced ${totalUpserted} plans across ${networks.length} networks (${perNetworkSummary.join(', ')}). ` +
+      `${totalHiddenLowPrice} plan(s) priced below ₦${MIN_PRICE_NAIRA} were synced but left hidden.`,
+  });
 });
 
 // PATCH /api/plans/:id — manual price override and/or active toggle (e.g. turning on
