@@ -246,7 +246,7 @@ router.post('/forgot-password', resetLimiter, async (req, res) => {
     const resetUrl = `${process.env.APP_URL || ''}/reset-password.html?token=${rawToken}`;
     await sendMail({
       to: email,
-      subject: 'Reset your DataPlug password',
+      subject: 'Reset your FlutterDataPlug password',
       text: `Hi ${user.username}, reset your password here (valid for 1 hour): ${resetUrl}\n\nIf you didn't request this, you can ignore this email.`,
       html: `<p>Hi ${user.username},</p><p>Reset your password using the link below (valid for 1 hour):</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, you can ignore this email.</p>`,
     });
@@ -318,7 +318,7 @@ router.post('/2fa/setup', requireAuth, async (req, res) => {
       req.user.id,
     ]);
 
-    const otpauth = authenticator.keyuri(req.user.username, 'DataPlug', secret);
+    const otpauth = authenticator.keyuri(req.user.username, 'FlutterDataPlug', secret);
     const qrDataUrl = await QRCode.toDataURL(otpauth);
 
     res.json({ secret, qrDataUrl });
