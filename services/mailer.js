@@ -13,7 +13,7 @@ async function sendMail({ to, subject, html, text }) {
   }
   try {
     const { error } = await resend.emails.send({
-      from: process.env.RESEND_FROM || 'DataPlug <onboarding@resend.dev>',
+      from: process.env.RESEND_FROM || 'FlutterDataPlug <onboarding@resend.dev>',
       to,
       subject,
       html,
