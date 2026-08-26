@@ -130,10 +130,10 @@ let plansLoaded = false;
 let plansState = { screen: 'networks', network: null, duration: 'weekly' };
 
 const NETWORK_COLORS = {
-  MTN: { bg: '#FFCC00', fg: '#111111' },
-  Glo: { bg: '#00A651', fg: '#ffffff' },
-  Airtel: { bg: '#ED1C24', fg: '#ffffff' },
-  '9mobile': { bg: '#00A99D', fg: '#ffffff' },
+  MTN: { bg: '#FFCC00', fg: '#111111', price: '#8A6D00' },
+  Glo: { bg: '#00A651', fg: '#ffffff', price: '#00793D' },
+  Airtel: { bg: '#ED1C24', fg: '#ffffff', price: '#C4151B' },
+  '9mobile': { bg: '#00A99D', fg: '#ffffff', price: '#00867D' },
 };
 
 async function loadPlans(force = false) {
@@ -226,6 +226,7 @@ function renderPlanCards() {
     return;
   }
   empty.style.display = 'none';
+  const theme = NETWORK_COLORS[plansState.network] || { price: '#7C4DFF' };
 
   grid.innerHTML = filtered.map((p) => `
     <div class="market-product-card" data-id="${p.id}">
@@ -233,7 +234,7 @@ function renderPlanCards() {
         <h3 class="market-product-name">${p.data_size || cleanPlanName(p.raw_name)}</h3>
         <p class="market-product-desc">${cleanPlanName(p.raw_name)}</p>
         <div class="market-product-footer">
-          <span class="market-product-price">₦${Number(p.price).toFixed(2)}</span>
+          <span class="market-product-price" style="color:${theme.price};">₦${Number(p.price).toFixed(2)}</span>
         </div>
       </div>
     </div>
