@@ -26,6 +26,33 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/plans/preview — public, NO auth: a capped preview of active plans, for the
+// marketing homepage's pricing table. Deliberately doesn't expose the full catalog or
+// require login — just enough to show real prices before someone commits to signing up.
+router.get('/preview', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT dp.data_size, dp.duration, dp.price, dp.raw_name, n.name AS network_name
+       FROM data_plans dp JOIN networks n ON n.id = dp.network_id
+       WHERE dp.is_active = true AND n.is_active = true
+       ORDER BY n.name, dp.price ASC`
+    );
+    // Cap to the cheapest 10 per network here rather than in SQL — four networks, small
+    // result set either way, and this keeps the query simple to read.
+    const byNetwork = {};
+    for (const row of result.rows) {
+      (byNetwork[row.network_name] ||= []).push(row);
+    }
+    for (const name of Object.keys(byNetwork)) {
+      byNetwork[name] = byNetwork[name].slice(0, 10);
+    }
+    res.json(byNetwork);
+  } catch (err) {
+    console.error('Plans preview fetch error:', err.message);
+    res.status(500).json({ error: 'Could not fetch plans.' });
+  }
+});
+
 // GET /api/plans/all — admin view, all plans regardless of active status, with margins
 router.get('/all', requireAuth, requirePermission('services.manage'), async (req, res) => {
   try {
@@ -53,7 +80,7 @@ router.get('/all', requireAuth, requirePermission('services.manage'), async (req
 
 // POST /api/plans/sync/:providerId — pull the latest variation codes for ALL FOUR networks
 // from VTPass and upsert. Full catalog, all durations active by default. Pricing = (provider
-// cost x markup) with a further 40% cut applied — see DISCOUNT_MULTIPLIER below for the
+// cost x markup) with a further 50% cut applied — see DISCOUNT_MULTIPLIER below for the
 // margin-safety flag on that math. Plans priced below ₦500 after the cut are synced but
 // left hidden rather than skipped, so they're recoverable later without a re-sync.
 // Manual price overrides (custom_price) make a row immune to future auto-adjustment of
@@ -71,13 +98,13 @@ router.post('/sync/:providerId', requireAuth, requirePermission('services.manage
   const markup = Number(providerRow.markup_multiplier);
 
   // Pricing rule, as instructed: take the normal marked-up price (provider cost x markup)
-  // and cut it by 40% — displayed as a flat price, no "40% off" badge anywhere.
+  // and cut it by 50% — displayed as a flat price, no "50% off" badge anywhere.
   // FLAG: with the default 15% markup (markup_multiplier=1.15), this computes to
-  // provider_price * 1.15 * 0.6 = provider_price * 0.69 — i.e. ~69% of what VTPass
-  // actually charges. That's below cost, not a discount off your margin. If that's not
-  // what you meant, either raise markup_multiplier on the provider (Providers tab) well
-  // above 1.67 before this discount would even break even, or tell me to change this rule.
-  const DISCOUNT_MULTIPLIER = 0.6; // "minus 40%"
+  // provider_price * 1.15 * 0.5 = provider_price * 0.575 — i.e. ~58% of what VTPass
+  // actually charges. That's well below cost, not a discount off your margin. If that's
+  // not what you meant, either raise markup_multiplier on the provider (Providers tab)
+  // well above 2.0 before this discount would even break even, or tell me to change this rule.
+  const DISCOUNT_MULTIPLIER = 0.5; // "minus 50%"
   const MIN_PRICE_NAIRA = 500; // general floor — plans priced below this after discount are synced but hidden, not skipped
   const MIN_PRICE_DAILY_NAIRA = 600; // daily plans specifically use a higher floor
 
