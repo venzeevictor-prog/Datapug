@@ -93,7 +93,7 @@
 
 <nav class="site-nav">
   <a href="/index.html" class="auth-brand" style="text-decoration:none;"><img src="/logo-icon.png" alt="" class="brand-icon"><span class="brand-flutter">flutter</span><span class="brand-name">DataPlug</span></a>
-  <ul class="site-nav-links">
+  <ul class="site-nav-links" id="site-nav-links">
     <li><a href="#networks">Networks</a></li>
     <li><a href="#how-it-works">How it works</a></li>
     <li><a href="#why-dataplug">Why FlutterDataPlug</a></li>
@@ -103,7 +103,9 @@
   </ul>
   <div class="site-nav-actions">
     <a href="/login.html" class="btn-secondary" id="nav-login-link">Log in</a>
-    <a href="/login.html" class="btn-cta" id="nav-cta-link">Get started</a>
+    <button type="button" class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false" aria-controls="site-nav-links">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
 
@@ -126,6 +128,17 @@
     <img src="/logo-full.png" alt="FlutterDataPlug logo — cheap MTN, Glo, Airtel and 9mobile data plans" width="380" height="386" loading="eager">
   </div>
 </header>
+
+<section class="section" id="networks">
+  <div class="section-head">
+    <span class="eyebrow">Prices</span>
+    <h2>Real prices, right now — no login required to look</h2>
+    <p>Every price below is live from our own catalog. Log in to see the full list, every duration.</p>
+  </div>
+  <div class="pricing-grid" id="pricing-grid">
+    <p class="rate-note" style="text-align:center;">Loading prices...</p>
+  </div>
+</section>
 
 <section class="showcase" aria-label="FlutterDataPlug in action">
   <div class="showcase-slider" id="showcase-slider">
@@ -169,36 +182,6 @@
     <button class="showcase-arrow showcase-prev" id="showcase-prev" aria-label="Previous slide">&#8249;</button>
     <button class="showcase-arrow showcase-next" id="showcase-next" aria-label="Next slide">&#8250;</button>
     <div class="showcase-dots" id="showcase-dots"></div>
-  </div>
-</section>
-
-<section class="section" id="networks">
-  <div class="section-head">
-    <span class="eyebrow">Networks</span>
-    <h2>All four Nigerian networks, one place</h2>
-    <p>Weekly plans are live today — monthly and 2-3 month bundles are on the way for every network below.</p>
-  </div>
-  <div class="features-grid">
-    <div class="marketing-card">
-      <div class="glyph" style="background:#FFCC00;color:#111;">MTN</div>
-      <h3>MTN</h3>
-      <p>Weekly data bundles at wholesale rates, with monthly and 2-3 month plans coming soon.</p>
-    </div>
-    <div class="marketing-card">
-      <div class="glyph" style="background:#00A651;">Glo</div>
-      <h3>Glo</h3>
-      <p>Weekly data bundles at wholesale rates, with monthly and 2-3 month plans coming soon.</p>
-    </div>
-    <div class="marketing-card">
-      <div class="glyph" style="background:#ED1C24;">Air</div>
-      <h3>Airtel</h3>
-      <p>Weekly data bundles at wholesale rates, with monthly and 2-3 month plans coming soon.</p>
-    </div>
-    <div class="marketing-card">
-      <div class="glyph" style="background:#00A99D;">9mo</div>
-      <h3>9mobile</h3>
-      <p>Weekly data bundles at wholesale rates, with monthly and 2-3 month plans coming soon.</p>
-    </div>
   </div>
 </section>
 
@@ -322,11 +305,77 @@
 <script>
 document.getElementById('footer-year').textContent = new Date().getFullYear();
 
+// Mobile nav — toggles the links list open/closed, and closes automatically once a
+// link is tapped so it doesn't sit open after navigating to a section.
+const navHamburger = document.getElementById('nav-hamburger');
+const navLinks = document.getElementById('site-nav-links');
+navHamburger.addEventListener('click', () => {
+  const isOpen = navLinks.classList.toggle('open');
+  navHamburger.classList.toggle('open', isOpen);
+  navHamburger.setAttribute('aria-expanded', String(isOpen));
+});
+navLinks.querySelectorAll('a').forEach((link) => {
+  link.addEventListener('click', () => {
+    navLinks.classList.remove('open');
+    navHamburger.classList.remove('open');
+    navHamburger.setAttribute('aria-expanded', 'false');
+  });
+});
+
+// Pricing table — same network brand colors used everywhere else on the site (dashboard's
+// network picker, VTPass sync classification), so the theme is consistent end to end.
+const NETWORK_THEME = {
+  MTN: { header: '#FFCC00', headerText: '#111111', price: '#8A6D00' },
+  Glo: { header: '#00A651', headerText: '#ffffff', price: '#00793D' },
+  Airtel: { header: '#ED1C24', headerText: '#ffffff', price: '#C4151B' },
+  '9mobile': { header: '#00A99D', headerText: '#ffffff', price: '#00867D' },
+};
+const NETWORK_ORDER = ['MTN', '9mobile', 'Airtel', 'Glo'];
+
+// Same fix as the dashboard's cleanPlanName() — VTPass's own plan names carry THEIR price
+// embedded as text (e.g. "N1500 6GB - 7 days" or "...- 1000 Naira"), which would otherwise
+// show up as a second price next to ours on this fallback path.
+function cleanPlanName(name) {
+  if (!name) return name;
+  return name.replace(/\bN[\d,]+(\.\d+)?\b/gi, '').replace(/\b[\d,]+(\.\d+)?\s*Naira\b/gi, '')
+    .replace(/-\s*-/g, '-').replace(/\s{2,}/g, ' ').replace(/^[\s-]+|[\s-]+$/g, '').trim();
+}
+
+fetch('/api/plans/preview')
+  .then((r) => r.json())
+  .then((byNetwork) => {
+    const grid = document.getElementById('pricing-grid');
+    const names = NETWORK_ORDER.filter((n) => byNetwork[n]?.length);
+    if (names.length === 0) {
+      grid.innerHTML = '<p class="rate-note" style="text-align:center;">Prices are being set up — check back shortly.</p>';
+      return;
+    }
+    grid.innerHTML = names.map((name) => {
+      const theme = NETWORK_THEME[name] || { header: '#7C4DFF', headerText: '#fff', price: '#7C4DFF' };
+      const rows = byNetwork[name].map((p) => `
+        <div class="pricing-row">
+          <span class="pricing-row-label">${p.data_size || cleanPlanName(p.raw_name)}<br><span class="pricing-row-duration">${p.duration}</span></span>
+          <span class="pricing-row-price" style="color:${theme.price};">₦${Number(p.price).toFixed(2)}</span>
+        </div>
+      `).join('');
+      return `
+        <div class="pricing-card">
+          <div class="pricing-card-header" style="background:${theme.header};color:${theme.headerText};">${name} Data Plans</div>
+          ${rows}
+        </div>
+      `;
+    }).join('');
+  })
+  .catch(() => {
+    document.getElementById('pricing-grid').innerHTML =
+      '<p class="rate-note" style="text-align:center;">Could not load prices right now — refresh to try again.</p>';
+  });
+
 // If the visitor already has a session, point the primary CTAs at the dashboard
 // instead of the login form. This never redirects the page itself — search
 // engines (and logged-out visitors) always see the full marketing content.
 if (API.token()) {
-  ['nav-cta-link', 'hero-cta-link', 'banner-cta-link'].forEach((id) => {
+  ['hero-cta-link', 'banner-cta-link'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) { el.href = '/dashboard.html'; el.textContent = 'Go to dashboard'; }
   });
