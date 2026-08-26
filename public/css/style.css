@@ -967,6 +967,29 @@ select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4p
 }
 .site-nav-links a:hover { color: var(--primary); }
 .site-nav-actions { display: flex; align-items: center; gap: 10px; }
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 .btn-secondary {
   padding: 10px 20px;
   border-radius: var(--radius-pill);
@@ -1166,6 +1189,40 @@ select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4p
 .marketing-card p { font-size: 13.5px; color: var(--ink-soft); line-height: 1.55; margin: 0; }
 
 .steps-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); counter-reset: step; }
+
+/* ============ Homepage pricing table — each column themed to its network's brand color ============ */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+}
+.pricing-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.pricing-card-header {
+  padding: 14px 18px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  text-align: center;
+}
+.pricing-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.pricing-row:last-child { border-bottom: none; }
+.pricing-row-label { color: var(--ink); }
+.pricing-row-duration { color: var(--ink-soft); font-size: 12px; }
+.pricing-row-price { font-weight: 800; font-family: var(--font-mono); white-space: nowrap; }
 .step-card { position: relative; }
 .step-card .step-num {
   font-family: var(--font-display);
@@ -1216,7 +1273,63 @@ select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4p
   .hero-visual { order: 1; margin-top: 8px; }
   .hero-visual img { max-width: 180px; }
   .hero h1 { font-size: 32px; }
-  .site-nav-links { display: none; }
+
+  /* Nav: links collapse into a hamburger-triggered dropdown instead of just vanishing. */
+  .nav-hamburger { display: flex; }
+  .site-nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    box-shadow: var(--shadow-md);
+    padding: 8px 24px 16px;
+    z-index: 40;
+  }
+  .site-nav-links.open { display: flex; }
+  .site-nav-links li { width: 100%; }
+  .site-nav-links a {
+    display: block;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+  }
+  .site-nav-links li:last-child a { border-bottom: none; }
+  .site-nav { position: relative; flex-wrap: wrap; padding: 16px 20px; }
+
+  .section { padding: 40px 20px; }
+  .section-head h2 { font-size: 24px; }
+  .showcase { padding: 0 16px; }
+}
+
+@media (max-width: 640px) {
+  .site-nav-actions .btn-secondary { padding: 8px 14px; font-size: 13px; }
+  .site-nav .auth-brand { font-size: 18px; }
+  .hero h1 { font-size: 26px; }
+  .hero p.lead { font-size: 14.5px; }
+  .hero-trust { gap: 16px; }
+  .hero-eyebrow { font-size: 11px; padding: 5px 12px; }
+  .showcase-slide { aspect-ratio: 4 / 5; }
+  .showcase-caption h3 { font-size: 16px; }
+  .showcase-arrow { width: 30px; height: 30px; font-size: 16px; }
+  .section-head h2 { font-size: 21px; }
+  .section-head p { font-size: 14px; }
+  .cta-banner h2 { font-size: 21px; }
+  .cta-banner p { font-size: 13.5px; }
+  .site-footer-inner { flex-direction: column; gap: 16px; text-align: center; align-items: center; }
+  .site-footer-links { justify-content: center; }
+}
+
+@media (max-width: 400px) {
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn-cta,
+  .hero-actions .btn-secondary { text-align: center; }
+  .hero-trust { flex-direction: column; gap: 10px; }
 }
 
 @media (max-width: 480px) {
